@@ -1,0 +1,10 @@
+(import [QtQuick.Controls "1.2"]
+        [QtQuick.Layouts "1.1"])
+
+{ApplicationWindow
+ {:title "Musistant"
+  :width 700
+  :height 500
+  :menuBar {MenuBar {:Item {Menu {:title "File"
+                                  :Item {MenuItem {:text "Open"}}}}}}
+  :toolBar {ToolBar {}}}}
