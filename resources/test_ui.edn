@@ -5,6 +5,39 @@
  {:title "Musistant"
   :width 700
   :height 500
-  :menuBar {MenuBar {:Item {Menu {:title "File"
-                                  :Item {MenuItem {:text "Open"}}}}}}
-  :toolBar {ToolBar {}}}}
+  :menuBar
+    {MenuBar
+     {:Items
+      {Menu {:title "File"
+              :Items
+                [{MenuItem {:text "Open"}}
+                 {MenuItem {:text "Save"}}
+                 {MenuItem {:text "Save as"}}]}}}}
+  :toolBar
+    {ToolBar
+     {:Items
+      {RowLayout {:anchors.fill parent
+                   :Items
+                     {TabView {:Layout.fillHeight true
+                                :Layout.fillWidth true
+                                :Items
+                                  [{Tab {:title "Insert"
+                                         :Items
+                                           {RowLayout
+                                             {:anchors.fill parent
+                                              :Items
+                                                {ToolButton
+                                                  {:iconName "save" }}}}}}
+                                   {Tab {:title "Edit"}}
+                                   {Tab {:title "Analyze"}}]}}}}}}
+  :Items
+    {SplitView {:anchors.fill parent
+                 :Items
+                   [{TextArea {:text "Select something, anything!"
+                               :Layout.fillHeight true
+                               :Layout.fillWidth true}}
+                    {TabView {:Layout.fillHeight true
+                              :Layout.fillWidth true
+                              :Items
+                                [{Tab { :title "Notation" }}
+                                 {Tab { :title "Mixer" }}]}}]}}}}

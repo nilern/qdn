@@ -15,35 +15,52 @@
 ;;; UI tree section
 ;;; ============================================================================
 
+(defn indent-str [i]
+  (string/join (repeat i "  ")))
+
 (defn qt-item? [m]
   (and (map? m) (single? m) (symbol? (first-key m))))
 
 (declare item-map->qml)
 
-(defn val->qml [v]
+(defn key->qml [k]
+  (if (keyword? k)
+    (keyword->str k)
+    (str k)))
+
+(declare qt-item->qml)
+
+(defn val->qml [v indent]
   (if (qt-item? v)
-    (item-map->qml v)
+    (qt-item->qml v (inc indent) :inline)
     (str v)))
 
-(defn map-pair->str [mp]
-  (let [k (first mp)
-        v (second mp)]
-    (if (= k :Item)
-      (str (val->qml v) "\n")
-      (str (keyword->str k) ": " (val->qml v) "\n"))))
+(defn items->qml [items indent]
+  (if (vector? items)
+    (string/join (map #(str (qt-item->qml % (inc indent) :block)) items))
+    (str (qt-item->qml items (inc indent) :block))))
 
-(defn map->str [m]
-  (string/join (map map-pair->str m)))
+(defn item-map-entry->qml [[k v] indent]
+  (case k
+    :Items (items->qml v indent)
+    :functions nil
+    (str (indent-str (inc indent))
+           (key->qml k) (when-not (nil? v) ": ")
+           (val->qml v indent) "\n")))
 
-(defn item-map->qml [im]
+(defn item-map->qml [m indent]
+  (string/join (map #(item-map-entry->qml % indent) m)))
+
+(defn qt-item->qml [im indent inline]
   (let [item (first-key im)
         props (im item)]
-    (str item " {\n"
-         (map->str props)
-         "}\n")))
+    (str (when (= inline :block) (indent-str indent))
+         item " {\n"
+         (item-map->qml props indent)
+         (indent-str indent) "}\n")))
 
 (defn edn-ui-tree->qml [eut]
-  (item-map->qml eut))
+  (qt-item->qml eut 0 :block))
 
 ;;; API
 ;;; ============================================================================
