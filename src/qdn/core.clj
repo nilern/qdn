@@ -1,7 +1,26 @@
 (ns qdn.core
   (:require [qdn.util :refer :all]
             [clojure.string :as string]
-            [clojure.edn :as edn]))
+            [clojure.edn :as edn]
+            [clojure.pprint :as pp]
+            [clojure.tools.reader :as reader]
+            [clojure.tools.reader.reader-types :as readers]
+            [cljs.analyzer :as ana]
+            [cljs.compiler :as c]
+            [cljs.closure :as cc]
+            [cljs.env :as env])
+  (:gen-class :main true))
+
+;;; * TODO: clean up everything
+;;; * TODO: cli options
+
+;;; Compiling
+;;; ============================================================================
+
+(defn compile-expr [s]
+  (with-out-str (c/emit (ana/analyze
+                        {:ns {:name 'cljs.user} :locals {}}
+                        s))))
 
 ;;; Import section
 ;;; ============================================================================
@@ -31,9 +50,9 @@
 (declare qt-item->qml)
 
 (defn val->qml [v indent]
-  (if (qt-item? v)
-    (qt-item->qml v (inc indent) :inline)
-    (str v)))
+  (cond (qt-item? v) (qt-item->qml v (inc indent) :inline)
+        (symbol? v) (str v)
+        :else (compile-expr v)))
 
 (defn items->qml [items indent]
   (if (vector? items)
@@ -71,3 +90,9 @@
           ui-tree (edn/read infile)]
       (str (edn-imports->qml imports);))))
            (edn-ui-tree->qml ui-tree)))))
+
+;;; main
+;;; ============================================================================
+
+(defn -main [& args]
+  (print (edn->qml (first args))))
