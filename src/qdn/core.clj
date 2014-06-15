@@ -3,11 +3,9 @@
             [clojure.string :as string]
             [clojure.edn :as edn]
             [cljs.analyzer :as ana]
-            [cljs.compiler :as c])
-  (:gen-class :main true))
+            [cljs.compiler :as c]))
 
 ;;; * TODO: clean up everything
-;;; * TODO: cli options
 
 ;;; Compiling
 ;;; ============================================================================
@@ -88,9 +86,3 @@
           ui-tree (edn/read infile)]
       (str (edn-imports->qml imports);))))
            (edn-ui-tree->qml ui-tree)))))
-
-;;; main
-;;; ============================================================================
-
-(defn -main [& args]
-  (print (edn->qml (first args))))
