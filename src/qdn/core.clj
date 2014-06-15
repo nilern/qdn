@@ -2,13 +2,8 @@
   (:require [qdn.util :refer :all]
             [clojure.string :as string]
             [clojure.edn :as edn]
-            [clojure.pprint :as pp]
-            [clojure.tools.reader :as reader]
-            [clojure.tools.reader.reader-types :as readers]
             [cljs.analyzer :as ana]
-            [cljs.compiler :as c]
-            [cljs.closure :as cc]
-            [cljs.env :as env])
+            [cljs.compiler :as c])
   (:gen-class :main true))
 
 ;;; * TODO: clean up everything
@@ -18,9 +13,7 @@
 ;;; ============================================================================
 
 (defn compile-expr [s]
-  (with-out-str (c/emit (ana/analyze
-                        {:ns {:name 'cljs.user} :locals {}}
-                        s))))
+  (with-out-str (c/emit (ana/analyze {} s))))
 
 ;;; Import section
 ;;; ============================================================================
@@ -42,6 +35,11 @@
 
 (declare item-map->qml)
 
+(defn trim-semicolons [s]
+  (if (<= ((frequencies s) \newline) 1)
+    (string/replace s #";\n" "")
+    s))
+
 (defn key->qml [k]
   (if (keyword? k)
     (keyword->str k)
@@ -52,7 +50,7 @@
 (defn val->qml [v indent]
   (cond (qt-item? v) (qt-item->qml v (inc indent) :inline)
         (symbol? v) (str v)
-        :else (compile-expr v)))
+        :else (trim-semicolons (compile-expr v))))
 
 (defn items->qml [items indent]
   (if (vector? items)
