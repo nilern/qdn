@@ -33,6 +33,7 @@
 
 (declare item-map->qml)
 
+;; FIXME: catch NullPointerException
 (defn trim-semicolons [s]
   (if (<= ((frequencies s) \newline) 1)
     (string/replace s #";\n" "")
@@ -80,9 +81,11 @@
 ;;; API
 ;;; ============================================================================
 
-(defn edn->qml [fl]
-  (with-open [infile (java.io.PushbackReader. (clojure.java.io/reader fl))]
-    (let [imports (edn/read infile)
-          ui-tree (edn/read infile)]
-      (str (edn-imports->qml imports);))))
-           (edn-ui-tree->qml ui-tree)))))
+(defn edn->qml
+  ([fl]
+   (with-open [infile (java.io.PushbackReader. (clojure.java.io/reader fl))]
+     (let [imports (edn/read infile)
+           ui-tree (edn/read infile)]
+       (str (edn-imports->qml imports)
+            (edn-ui-tree->qml ui-tree)))))
+  ([ifl ofl] (spit ofl (edn->qml ifl))))
