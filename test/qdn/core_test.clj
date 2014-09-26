@@ -5,8 +5,7 @@
 (deftest import-form
   (is (= (edn-imports->qml
            '(import [Namespace "1.0"]
-                    [Namespace "1.0"
-                     :as SingletonTypeIdentifier]
+                    [Namespace "1.0" :as SingletonTypeIdentifier]
                     ["directory"]
                     ["file.js" :as ScriptIdentifier]))
          (str "import Namespace 1.0\n"
@@ -64,3 +63,26 @@
                   "    }\n"
                   "  }\n"
                   "}\n"))))))
+
+(deftest list-MVC
+  (is (= (list-model (range 4))
+         '[ListModel {}
+           [ListElement {:value 0}]
+           [ListElement {:value 1}]
+           [ListElement {:value 2}]
+           [ListElement {:value 3}]]))
+  (is (= (list-model [{:val "kyrie"} {:val "iant"}])
+         '[ListModel {}
+           [ListElement {:val "kyrie"}]
+           [ListElement {:val "iant"}]]))
+  (is (= (list-model [[:val "kyrie"] [:val "iant"]])
+         '[ListModel {}
+           [ListElement {:val "kyrie"}]
+           [ListElement {:val "iant"}]]))
+  (is (= (list-model [{:val "kyrie" :key "to Heaven"}])
+         '[ListModel {}
+           [ListElement {:val "kyrie" :key "to Heaven"}]]))
+  (is (= (list-model {:id 'wornOutBeliefs}
+                     [{:val "kyrie" :key "to Heaven"}])
+         '[ListModel {:id wornOutBeliefs}
+           [ListElement {:val "kyrie" :key "to Heaven"}]])))

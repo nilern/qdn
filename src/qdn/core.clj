@@ -123,22 +123,13 @@
   ([imports ui-tree] (str (edn-imports->qml imports)
                           (edn-ui-tree->qml ui-tree))))
 
-(defn to-QML [qml]
-  (str "import QtQuick 2.2\n\n" qml))
+(defn list-element [e]
+  ['ListElement (cond
+                  (map? e) e
+                  (coll? e) (apply hash-map e)
+                  :else {:value e})])
 
-(defn list-element [name]
-  (str "ListElement { name: \"" name "\"\n}\n"))
-
-(defn pc-list-element [pc]
-  (str "ListElement { pc: " pc "\n}\n"))
-
-(defn list-model [props id]
-  (str "ListModel {\n"
-       (if id
-         (str "id: " id "\n")
-         "")
-       (reduce #(str %1 %2) props)
-       "}\n"))
-
-
-
+(defn list-model
+  ([coll] (list-model {} coll))
+  ([props coll] (vec (concat ['ListModel props]
+                             (map list-element coll)))))
