@@ -1,6 +1,7 @@
 (ns qdn.core
   "Turn (hiccup-like) edn forms into QML."
-  (:require [clojure.string :as string]))
+  (:require [clojure.string :as string]
+            [com.reasonr.scriptjure :as scriptjure]))
 
 ;;; Import section
 ;;; ============================================================================
@@ -48,7 +49,7 @@
   [cn]
   (or (symbol? cn) (string? cn) (keyword? cn)))
 
-(defn component-name->str
+(defn name->qml
   "    cn ;=> \"cn\"
        \"cn\" ;=> \"cn\"
        :cn ;=> \"cn\""
@@ -65,6 +66,19 @@
 (defn indent-str [i]
   (string/join (repeat i "  ")))
 
+(defn indent-js [js-str indent]
+  (if (.contains js-str "\n")
+    (->> (string/split-lines js-str)
+         (map string/trim)
+         (#(cons (first %)
+                 (map (fn [a]
+                        (let [i (if-not (= (first a) \}) 2 1)]
+                          (str (indent-str (+ indent i)) a)))
+                      (rest %))))
+         (remove #(= (re-find #"\s*" %) %))
+         (string/join "\n"))
+    js-str))
+
 (defn key->qml [k]
   (if (keyword? k)
     (name k)
@@ -72,10 +86,15 @@
 
 (declare qt-item->qml)
 
-(defn val->qml [v indent]
-  (cond (qt-item? v) (qt-item->qml v (inc indent) :inline)
-        (string? v) (str "\"" v "\"")
-        :else (str v)))
+(defn val->qml
+  ([v] (val->qml v 0))
+  ([v indent]
+   (cond (qt-item? v) (qt-item->qml v (inc indent) :inline)
+         :else (indent-js (let [js-expr (scriptjure/js (clj v))]
+                            (if (re-find #";\s*[^\s\}]" js-expr)
+                              (str "{\n" js-expr "\n}")
+                              (str js-expr)))
+                          indent))))
 
 (defn items->qml [items indent]
   (if (vector? items)
@@ -97,17 +116,47 @@
   [m indent]
   (string/join (map #(item-map-entry->qml % indent) m)))
 
+(defn property-attribute? [expr]
+  (and (coll? expr)
+       (= (first expr) 'defproperty)))
+
+(defn prop-attr-val->qml [pa-val]
+  ())
+
+(defn property-attribute->qml
+  "`(defproperty :real deal) ;=> \"property real deal\"
+    (defproperty :real deal 0.95);=> \"property real deal: 0.95\"`
+    (defproperty :method hide (fn [] (set! visible false))
+    ;=> \"function hide() { visible = false; }\"`"
+  [[_ type name :as prop-attr] indent]
+  (if (= (key->qml type) "method")
+    (str "  "
+         (indent-js
+           (scriptjure/js (clj (apply list (concat (list 'function name)
+                                                   (rest (nth prop-attr 3))))))
+           indent)
+         "\n")
+    (str (indent-str (inc indent)) "property "
+         (key->qml type) " " (name->qml name)
+         (when (> (count prop-attr) 3)
+           (str ": " (val->qml (nth prop-attr 3))))
+         "\n")))
+
 (defn qt-item->qml [im indent inline]
-  (let [item (component-name->str (first im))
+  (let [item (filter component-name? im)
+        component-name (name->qml (first item))
+        prop-attrs (filter property-attribute? im)
         prop-maps (filter map? im)
         sub-items (filter qt-item? im)]
-    (if-let [id (second (re-find #"#(\S*)" item))]
+    (if-let [id (second (re-find #"#(\S*)" component-name))]
+      ;; id shorthand Item#id
       (recur (vec (concat
-                    [(string/replace item #"#\S*" "") {:id (symbol id)}]
+                    [(string/replace component-name #"#\S*" "") {:id (symbol id)}]
                     (rest im)))
              indent inline)
       (str (when (= inline :block) (indent-str indent))
-           item " {\n"
+           (string/join " " (map name->qml item)) " {\n"
+           (string/join (map #(property-attribute->qml % indent) prop-attrs))
            (string/join (map #(item-map->qml % indent) prop-maps))
            (string/join (map #(qt-item->qml % (inc indent) inline) sub-items))
            (indent-str indent) "}\n"))))

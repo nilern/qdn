@@ -13,12 +13,100 @@
               "import \"directory\"\n"
               "import \"file.js\" as ScriptIdentifier\n\n"))))
 
+(deftest property
+  (testing "keys"
+    (are [k qml-k] (= (key->qml k) qml-k)
+                   :key "key"
+                   "key" "key"
+                   'key "key"))
+  (testing "values"
+    (testing "literals"
+      (testing "atoms"
+        (are [v qml-v] (= (val->qml v) qml-v)
+                       'val "val"
+                       :val "val"
+                       "val" "\"val\""
+                       23 "23"
+                       5.5 "5.5"))
+      (testing "collections"
+        (are [v qml-v] (= (val->qml v) qml-v)
+                       [0 2 3] "[0, 2, 3]"
+                       {:a 8 :b 7} "{b: 7, a: 8}"
+                       {"a" 8 "b" 7} "{\"a\": 8, \"b\": 7}"))
+      (testing "function"
+        (testing "call"
+          (is (= (val->qml '(high 5)) "high(5)")))
+        (testing "definition"
+          (is (= (val->qml '(fn [x] (+ x 20)))
+                 (str "function (x) {\n"
+                      "    (x + 20);\n"
+                      "  }")))))
+      (testing "property access"
+        (is (= (val->qml 'parent.height) "parent.height")))
+      (testing "conditional"
+        (is (= (val->qml '(if (< x 0) x (inc x)))
+               (str "if ((x < 0)) {\n"
+                    "    x\n"
+                    "  } else {\n"
+                    "    (x + 1)\n"
+                    "  }"))))
+      (testing "imperative"
+        (is (= (val->qml '(do (var x 1) (set! x 3)))
+               (str "{\n"
+                    "    var x;\n"
+                    "    x = 1;\n"
+                    "    x = 3;\n"
+                    "  }")))))))
+
+(deftest property-attribute
+  (testing "declaration"
+    (is (= (property-attribute->qml '(defproperty :real deal) 0)
+           "  property real deal\n"))
+    (testing "and initialization"
+      (is (= (property-attribute->qml '(defproperty :real deal 0.95) 0)
+             "  property real deal: 0.95\n"))))
+  (testing "integration"
+    (is (= (qt-item->qml
+             '[MouseArea
+               (defproperty :real mouseR (Math.sqrt (Math.pow mouseX 2)
+                                                    (Math.pow mouseY 2)))
+               {:anchors.fill parent}] 0 :block)
+           (str "MouseArea {\n"
+                "  property real mouseR: Math.sqrt(Math.pow(mouseX, 2), "
+                "Math.pow(mouseY, 2))\n"
+                "  anchors.fill: parent\n"
+                "}\n")))))
+
+(deftest method-attribute
+  (is (= (qt-item->qml
+           '[MouseArea
+             (defproperty :method hide (fn [] (set! visible false)))
+             {:anchors.fill parent
+              :color "cyan"}] 0 :block)
+         (str "MouseArea {\n"
+              "  function hide() {\n"
+              "    visible = false;\n"
+              "  }\n"
+              "  anchors.fill: parent\n"
+              "  color: \"cyan\"\n"
+              "}\n"))))
+
 (deftest item-form
   (testing "component-name"
-    (are [cn] (= (component-name->str cn) "Component")
+    (are [cn] (= (name->qml cn) "Component")
               'Component
               "Component"
-              :Component))
+              :Component)
+    (testing "...and then some"
+      (is (= (qt-item->qml '[Behavior on x
+                             [NumberAnimation
+                              {:easing.type Easing.OutQuad}]]
+                           0 :block)
+             (str "Behavior on x {\n"
+                  "  NumberAnimation {\n"
+                  "    easing.type: Easing.OutQuad\n"
+                  "  }\n"
+                  "}\n")))))
   (testing "empty form"
     (is (= (qt-item->qml '[Component] 0 :block)
            "Component {\n}\n")))
