@@ -1,7 +1,21 @@
 (ns qdn.core
   "Turn (hiccup-like) edn forms into QML."
   (:require [clojure.string :as string]
-            [com.reasonr.scriptjure :as scriptjure]))
+   #+clj    [com.reasonr.scriptjure :refer [js]])
+  ;#+cljs (:require-macros [com.reasonr.scriptjure :refer [js]])
+  )
+
+;;; Fake js macro with these fns because scriptjure is not cljx yet:
+
+#+cljs
+(defn js [expr]
+  (cond
+    (string? expr) (str "\"" expr "\"")
+    (keyword? expr) (str (name expr))
+    :else (str expr)))
+
+#+cljs
+(def clj identity)
 
 ;;; Import section
 ;;; ============================================================================
@@ -67,7 +81,7 @@
   (string/join (repeat i "  ")))
 
 (defn indent-js [js-str indent]
-  (if (.contains js-str "\n")
+  (if (re-find #"\n" js-str)
     (->> (string/split-lines js-str)
          (map string/trim)
          (#(cons (first %)
@@ -90,7 +104,7 @@
   ([v] (val->qml v 0))
   ([v indent]
    (cond (qt-item? v) (qt-item->qml v (inc indent) :inline)
-         :else (indent-js (let [js-expr (scriptjure/js (clj v))]
+         :else (indent-js (let [js-expr (js (clj v))]
                             (if (re-find #";\s*[^\s\}]" js-expr)
                               (str "{\n" js-expr "\n}")
                               (str js-expr)))
@@ -120,9 +134,6 @@
   (and (coll? expr)
        (= (first expr) 'defproperty)))
 
-(defn prop-attr-val->qml [pa-val]
-  ())
-
 (defn property-attribute->qml
   "`(defproperty :real deal) ;=> \"property real deal\"
     (defproperty :real deal 0.95);=> \"property real deal: 0.95\"`
@@ -132,7 +143,7 @@
   (if (= (key->qml type) "method")
     (str "  "
          (indent-js
-           (scriptjure/js (clj (apply list (concat (list 'function name)
+           (js (clj (apply list (concat (list 'function name)
                                                    (rest (nth prop-attr 3))))))
            indent)
          "\n")
