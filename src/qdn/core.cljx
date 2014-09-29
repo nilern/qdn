@@ -104,6 +104,7 @@
   ([v] (val->qml v 0))
   ([v indent]
    (cond (qt-item? v) (qt-item->qml v (inc indent) :inline)
+         (string? v) (js (clj v))
          :else (indent-js (let [js-expr (js (clj v))]
                             (if (re-find #";\s*[^\s\}]" js-expr)
                               (str "{\n" js-expr "\n}")
