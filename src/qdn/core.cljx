@@ -1,6 +1,9 @@
 (ns qdn.core
   "Turn (hiccup-like) edn forms into QML."
   (:require [clojure.string :as string]
+   #+clj    [clojure.edn :as edn]
+   #+cljs   [cljs.reader :as edn]
+   #+clj    [clojure.java.io :as io]
    #+clj    [com.reasonr.scriptjure :refer [js]])
   ;#+cljs (:require-macros [com.reasonr.scriptjure :refer [js]])
   )
@@ -59,18 +62,16 @@
 ;;; ============================================================================
 
 (defn component-name?
-  "Is cn a valid component name (a symbol, string or keyword)?"
+  "Is cn a valid part of a component name (a symbol or keyword)?"
   [cn]
-  (or (symbol? cn) (string? cn) (keyword? cn)))
+  (or (symbol? cn) (keyword? cn)))
 
 (defn name->qml
   "    cn ;=> \"cn\"
        \"cn\" ;=> \"cn\"
        :cn ;=> \"cn\""
   [cn]
-  (cond
-    (or (symbol? cn) (string? cn)) (str cn)
-    (keyword? cn) (str (name cn))))
+  (str (name cn)))
 
 (defn qt-item?
   "Is m a qt-item, i.e. a vector whose first entry is a component-name?"
@@ -163,7 +164,8 @@
     (if-let [id (second (re-find #"#(\S*)" component-name))]
       ;; id shorthand Item#id
       (recur (vec (concat
-                    [(string/replace component-name #"#\S*" "") {:id (symbol id)}]
+                    [(symbol (string/replace component-name #"#\S*" ""))
+                     {:id (symbol id)}]
                     (rest im)))
              indent inline)
       (str (when (= inline :block) (indent-str indent))
@@ -183,6 +185,25 @@
   ([ui-tree] (edn-ui-tree->qml ui-tree))
   ([imports ui-tree] (str (edn-imports->qml imports)
                           (edn-ui-tree->qml ui-tree))))
+#+clj
+(defn file->vector [filename]
+  (with-open [infile (java.io.PushbackReader. (io/reader filename))]
+    (binding [*in* infile]
+      (let [imports (edn/read *in*)
+            ui-tree (edn/read *in*)]
+        [imports ui-tree]))))
+
+#+clj
+(defn edn->QML-file [file imports ui-tree]
+  (spit file (edn->QML imports ui-tree)))
+
+#+clj
+(defn edn-file->QML-file
+  ([edn-file] (edn-file->QML-file edn-file (string/replace edn-file
+                                                      #".edn|.qdn"
+                                                      ".qml")))
+  ([edn-file qml-file]
+    (apply edn->QML-file qml-file (file->vector edn-file))))
 
 (defn list-element [e]
   ['ListElement (cond

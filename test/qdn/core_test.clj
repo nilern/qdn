@@ -95,7 +95,6 @@
   (testing "component-name"
     (are [cn] (= (name->qml cn) "Component")
               'Component
-              "Component"
               :Component)
     (testing "...and then some"
       (is (= (qt-item->qml '[Behavior on x
