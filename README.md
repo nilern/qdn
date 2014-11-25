@@ -7,7 +7,7 @@ QDN is to [QML](http://en.wikipedia.org/wiki/QML) what
 How to get it
 -------------
 
-It's on Clojars. Just put `[qdn "0.1.0"]` in your project.clj's :dependencies
+It's on Clojars. Just put `[qdn "0.1.1"]` in your project.clj's :dependencies
 vector.
 
 Syntax
@@ -77,6 +77,11 @@ QML compiler doesn't care.)
 
 You can use keywords or symbols as Component names. If you are not reading
 an edn file, symbols need to be quoted.
+
+For now QDN uses [my fork of Scriptjure](https://github.com/nilern/scriptjure)
+to generate the values of QML properties. It is a far cry from ClojureScript,
+but even bindings and event handlers should be simple anyway (the good ol'
+"don't put logic in your views" -thing).
 
 The API Functions
 -----------------
