@@ -1,0 +1,22 @@
+(import [QtQuick "2.0"]
+        [QtQuick.Controls "1.0" :as Controls]
+        ["mandelbrot"]
+        ["cljs.js" :as CLJS])
+
+[Rectangle#recklessRect
+ (defproperty :color textColor "limeGreen")
+ (defproperty :method flip (fn [] (set! rotation (+ rotation 180))))
+ {:width 600
+  :height 450
+  :color "red"}
+
+ [Text
+  {:anchors.centerIn parent
+   :color recklessRect.textColor
+   :text "I'm so handsome and brave."}]
+
+ [MouseArea
+  {:anchors.fill parent
+   :onClicked (.flip parent)}]
+
+ [Behavior on rotation [RotationAnimation]]]

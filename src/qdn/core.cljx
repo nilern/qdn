@@ -182,11 +182,23 @@
 ;;; ============================================================================
 
 (defn edn->QML
+  "Takes a tree of vectors `ui-tree` and optionally a list of import vectors
+   `imports`. Returns the corresponding string of QML."
   ([ui-tree] (edn-ui-tree->qml ui-tree))
   ([imports ui-tree] (str (edn-imports->qml imports)
                           (edn-ui-tree->qml ui-tree))))
+
 #+clj
-(defn file->vector [filename]
+(defn edn->QML-file
+  "Like edn->QML, but `spit`s the output string into `file`."
+  [file imports ui-tree]
+  (spit file (edn->QML imports ui-tree)))
+
+#+clj
+(defn file->vector
+  "Reads a QDN file `filename` and returns the contents as a vector
+   `[imports ui-tree]`"
+  [filename]
   (with-open [infile (java.io.PushbackReader. (io/reader filename))]
     (binding [*in* infile]
       (let [imports (edn/read *in*)
@@ -194,24 +206,28 @@
         [imports ui-tree]))))
 
 #+clj
-(defn edn->QML-file [file imports ui-tree]
-  (spit file (edn->QML imports ui-tree)))
-
-#+clj
 (defn edn-file->QML-file
+  "Reads the file `edn-file` with `file->vector` and writes the corresponding
+   QML into the file `qml-file` (the default is UI.edn => UI.qml)."
   ([edn-file] (edn-file->QML-file edn-file (string/replace edn-file
-                                                      #".edn|.qdn"
+                                                      #"\.\w*$"
                                                       ".qml")))
   ([edn-file qml-file]
     (apply edn->QML-file qml-file (file->vector edn-file))))
 
-(defn list-element [e]
+(defn list-element
+  "    {:foo \"bar\"} ; => '[ListElement {:foo \"bar\"}]
+       [:foo \"bar\"] ; => '[ListElement {:foo \"bar\"}]
+       \"a lot\" ; => '[ListElement {:value \"a lot\"}]`"
+  [e]
   ['ListElement (cond
                   (map? e) e
                   (coll? e) (apply hash-map e)
                   :else {:value e})])
 
 (defn list-model
+  "Turns `coll` into a QDN `'ListModel`. If `props` is supplied, it becomes the
+   property map of the ListModel."
   ([coll] (list-model {} coll))
   ([props coll] (vec (concat ['ListModel props]
                              (map list-element coll)))))
