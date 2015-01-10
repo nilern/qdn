@@ -15,6 +15,8 @@
   (cond
     (string? expr) (str "\"" expr "\"")
     (keyword? expr) (str (name expr))
+    (list? expr) (str (js (first expr))
+                      "(" (string/join ", " (map js (rest expr))) ")")
     :else (str expr)))
 
 #+cljs
