@@ -7,7 +7,7 @@ QDN is to [QML](http://en.wikipedia.org/wiki/QML) what
 How to get it
 -------------
 
-It's on Clojars. Just put `[qdn "0.1.2"]` in your project.clj's :dependencies
+It's on Clojars. Just put `[qdn "0.2.0"]` in your project.clj's :dependencies
 vector.
 
 Syntax
