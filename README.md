@@ -7,7 +7,7 @@ QDN is to [QML](http://en.wikipedia.org/wiki/QML) what
 How to get it
 -------------
 
-It's on Clojars. Just put `[qdn "0.1.1"]` in your project.clj's :dependencies
+It's on Clojars. Just put `[qdn "0.1.2"]` in your project.clj's :dependencies
 vector.
 
 Syntax
@@ -80,7 +80,7 @@ an edn file, symbols need to be quoted.
 
 For now QDN uses [my fork of Scriptjure](https://github.com/nilern/scriptjure)
 to generate the values of QML properties. It is a far cry from ClojureScript,
-but even bindings and event handlers should be simple anyway (the good ol'
+but bindings and event handlers should be simple anyway (the good ol'
 "don't put logic in your views" -thing).
 
 The API Functions
@@ -88,6 +88,7 @@ The API Functions
 
 But how do you carry out the translation? Use these:
 
+```
 qdn.core/edn->QML
 ([ui-tree] [imports ui-tree])
   Takes a tree of vectors `ui-tree` and optionally a list of import vectors
@@ -117,11 +118,31 @@ qdn.core/list-model
 ([coll] [props coll])
   Turns `coll` into a QDN `'ListModel`. If `props` is supplied, it becomes the
    property map of the ListModel.
+```
+
+### Dynamic Item creation
+
+```
+qdn.dynamic/qml-object!
+([qml parent] [qml parent filepath])
+  Instantiate the Component defined by the QML string `qml` as a child Item of
+   the `parent` Item. Wraps `js/Qt.createQmlObject`.
+
+qdn.dynamic/qdn-object!
+([qdn-imports qdn-ui-tree parent] [qdn-imports qdn-ui-tree parent filepath])
+  Like `qml-object!` but takes the qdn imports and ui-tree instead of a string
+   of QML.
+
+qdn.dynamic/binding
+([f])
+  Create a QML binding from the zero-argument function `f`.
+   Wraps `js/Qt.binding`.`
+```
 
 License
 -------
 
-Copyright © 2014 Pauli Jaakkola
+Copyright © 2014-2015 Pauli Jaakkola
 
 Distributed under the Eclipse Public License either version 1.0 or (at
 your option) any later version.
