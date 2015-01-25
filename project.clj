@@ -1,4 +1,4 @@
-(defproject qdn "0.1.2"
+(defproject qdn "0.2.0"
   :description "QML in EDN; Qt for ClojureScript!"
   :url "https://github.com/nilern/qdn"
   :license {:name "Eclipse Public License"
